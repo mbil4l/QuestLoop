@@ -66,6 +66,7 @@ export function loadAccount(accountId: string): void {
   currentAccountId = accountId;
 
   const w = read<{ worlds: unknown[] }>("worlds");
+
   useWorldStore.setState({
     worlds: (w?.worlds as never) ?? [],
     selectedWorldId: null,
@@ -105,11 +106,25 @@ export function loadAccount(accountId: string): void {
     countryCode: p?.countryCode ?? "",
   });
 
-  // The signed-out "guest" gets the demo map; real accounts start with their own.
-  if (accountId === "guest") {
-    useWorldStore.getState().seedIfEmpty();
-    useQuestStore.getState().seedIfEmpty();
-  }
+  // No prebuilt template: every account — guest or signed-in — starts with an
+  // empty map and builds it themselves. An empty map persists as empty.
 
   ensureSubscriptions();
+}
+
+/**
+ * Reset the active account's map: clear all worlds, quests/objectives/rituals,
+ * and notes, and persist the emptied state so it survives a reload (the demo
+ * map is not re-seeded). Profile/identity is left untouched.
+ */
+export function clearAccount(): void {
+  useWorldStore.setState({ worlds: [], selectedWorldId: null });
+  useQuestStore.setState({ quests: [], objectives: [], rituals: [] });
+  useNotesStore.setState({ homeNotes: "", worldNotes: {} });
+
+  // Subscriptions also persist this, but write explicitly so the cleared state
+  // is durable even if they haven't been attached yet.
+  write("worlds", { worlds: [] });
+  write("quests", { quests: [], objectives: [], rituals: [] });
+  write("notes", { homeNotes: "", worldNotes: {} });
 }

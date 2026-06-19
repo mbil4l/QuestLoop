@@ -131,7 +131,7 @@ export function RadialMap({
     : null;
 
   return (
-    <div className="relative w-full max-w-[520px] mx-auto aspect-square pointer-events-none">
+    <div className="relative w-full max-w-[min(78vh,860px)] mx-auto aspect-square pointer-events-none">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${SIZE} ${SIZE}`}

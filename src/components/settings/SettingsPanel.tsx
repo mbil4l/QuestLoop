@@ -1,12 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useUIStore } from "@/lib/stores/ui-store";
+import { clearAccount } from "@/lib/account";
 
 export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const prefs = useUIStore((s) => s.listPrefs);
   const setListPref = useUIStore((s) => s.setListPref);
   const reset = useUIStore((s) => s.resetListPrefs);
+  const [confirmingClear, setConfirmingClear] = useState(false);
 
   return (
     <>
@@ -93,6 +96,46 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
               />
               Compact rows
             </label>
+          </section>
+
+          <section>
+            <h3 className="text-xs uppercase tracking-wider text-red-500/80 mb-2">
+              Danger zone
+            </h3>
+            <p className="text-xs text-text-muted mb-3">
+              Permanently removes every world, task, and note from this browser.
+              This can&apos;t be undone.
+            </p>
+            {confirmingClear ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearAccount();
+                    setConfirmingClear(false);
+                    onClose();
+                  }}
+                  className="h-9 px-4 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
+                >
+                  Yes, clear everything
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmingClear(false)}
+                  className="h-9 px-4 rounded-lg text-sm text-text-secondary border border-border-subtle hover:text-text-primary transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmingClear(true)}
+                className="h-9 px-4 rounded-lg text-sm font-medium text-red-600 border border-red-500/40 hover:bg-red-500/10 transition-colors"
+              >
+                Clear all data
+              </button>
+            )}
           </section>
         </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useProfileStore } from "@/lib/stores/profile-store";
@@ -84,18 +84,8 @@ export function ProfilePanel() {
       .catch(() => setLocating(false));
   }
 
-  // Auto-detect location once after sign-in if we don't have it yet.
-  useEffect(() => {
-    if (!user || useProfileStore.getState().city) return;
-    detectLocation().then((loc) => {
-      if (loc)
-        setProfile({
-          city: loc.city,
-          region: loc.region,
-          countryCode: loc.countryCode,
-        });
-    });
-  }, [user, setProfile]);
+  // Location is opt-in: the user sets it explicitly via the button below
+  // (detect()). We never auto-detect/publish a location on their behalf.
 
   const accountId = user?.id ?? "guest";
   const name = displayName.trim() || user?.name || "Guest";
