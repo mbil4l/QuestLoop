@@ -6,6 +6,7 @@ import type { World, Quest } from "@/types/domain";
 import type { WorldStatus } from "@/types/enums";
 import { useQuestStore } from "@/lib/stores/quest-store";
 import { useWorldStore } from "@/lib/stores/world-store";
+import { useNotesStore } from "@/lib/stores/notes-store";
 import { useUIStore, type QuestSortKey } from "@/lib/stores/ui-store";
 import { WORLD_COLORS } from "@/lib/config";
 import { cn } from "@/lib/utils/cn";
@@ -305,10 +306,13 @@ export function WorldListPanel({
   const deleteWorld = useWorldStore((s) => s.deleteWorld);
   const prefs = useUIStore((s) => s.listPrefs);
   const setListPref = useUIStore((s) => s.setListPref);
+  const noteValue = useNotesStore((s) => s.worldNotes[world.id] ?? "");
+  const setWorldNotes = useNotesStore((s) => s.setWorldNotes);
 
   const [newTitle, setNewTitle] = useState("");
   const [showOptions, setShowOptions] = useState(false);
   const [showColors, setShowColors] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
   const newInputRef = useRef<HTMLInputElement>(null);
 
   const worldQuests = useMemo(
@@ -440,6 +444,24 @@ export function WorldListPanel({
 
             <button
               type="button"
+              aria-label="World notes"
+              aria-pressed={showNotes}
+              onClick={() => setShowNotes((v) => !v)}
+              className={cn(
+                "relative p-1.5 rounded hover:bg-bg-panel-hover transition-colors",
+                showNotes ? "text-text-primary" : "text-text-muted hover:text-text-primary"
+              )}
+            >
+              <span aria-hidden="true">📝</span>
+              {noteValue.trim() && (
+                <span
+                  className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
+                  style={{ backgroundColor: world.color }}
+                />
+              )}
+            </button>
+            <button
+              type="button"
               aria-label="Close"
               onClick={onClose}
               className="p-1.5 rounded text-text-muted hover:text-text-primary hover:bg-bg-panel-hover"
@@ -447,6 +469,18 @@ export function WorldListPanel({
               ✕
             </button>
           </div>
+
+          {showNotes && (
+            <div className="mt-3">
+              <textarea
+                value={noteValue}
+                onChange={(e) => setWorldNotes(world.id, e.target.value)}
+                placeholder={`Notes for ${world.name}…`}
+                rows={4}
+                className="w-full resize-y rounded-lg bg-bg-panel-raised border border-border-subtle p-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-active leading-relaxed"
+              />
+            </div>
+          )}
 
           <div className="flex items-center gap-2 mt-3">
             <select

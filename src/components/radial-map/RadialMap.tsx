@@ -11,6 +11,7 @@ interface RadialMapProps {
   onSelectWorld: (id: string) => void;
   getNextMoves: (worldId: string) => Quest[];
   pendingCount: number;
+  worldsWithNotes?: Set<string>;
 }
 
 function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
@@ -51,6 +52,7 @@ export function RadialMap({
   onSelectWorld,
   getNextMoves,
   pendingCount,
+  worldsWithNotes,
 }: RadialMapProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -228,6 +230,17 @@ export function RadialMap({
               >
                 {world.status}
               </text>
+              {worldsWithNotes?.has(world.id) && (
+                <text
+                  x={labelPos.x}
+                  y={labelPos.y + 26}
+                  textAnchor="middle"
+                  fontSize="11"
+                  className="pointer-events-none select-none"
+                >
+                  📝
+                </text>
+              )}
             </g>
           );
         })}
