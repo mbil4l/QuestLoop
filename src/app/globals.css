@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/*
+ * QuestLoop — warm beige light theme.
+ * Token names are kept stable (e.g. core-blue) so the shared UI primitives
+ * keep working; only the values changed from the old dark "cyber" palette.
+ */
+@theme inline {
+  --color-bg-deep: #F3ECDD;          /* page background — warm beige */
+  --color-bg-panel: #FBF6EC;         /* card surface — soft cream */
+  --color-bg-panel-raised: #FFFDF8;  /* raised surface — near white */
+  --color-bg-panel-hover: #EFE6D4;   /* hover wash */
+  --color-border-subtle: #E2D6BE;    /* soft tan border */
+  --color-border-active: #C0784E;    /* terracotta accent border */
+  --color-text-primary: #3A332A;     /* warm near-black */
+  --color-text-secondary: #6E6453;   /* warm gray */
+  --color-text-muted: #9C927C;       /* muted taupe */
+  --color-core-blue: #C0784E;        /* primary accent (terracotta) */
+  --color-core-cyan: #7BA098;        /* secondary accent (sage) */
+  --color-success-mint: #6F8F5A;
+  --color-warning-amber: #CF9B43;
+  --color-danger-muted: #C2603F;
+  --color-focus-ring: #C0784E;
+  --color-xp-fill: #C0784E;
+  --color-health-good: #6F8F5A;
+  --color-health-watch: #CF9B43;
+  --color-health-strain: #C2603F;
+  --font-pixel: "Geist", "Inter", system-ui, sans-serif;
+  --font-body: "Geist", "Inter", system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-bg-deep);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-subtle);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Panel styling */
+.cyber-panel {
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+}
+
+.cyber-panel-raised {
+  background: var(--color-bg-panel-raised);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(58, 51, 42, 0.04);
+}
+
+/* Soft accent glow → a gentle shadow in the light theme */
+.glow-blue {
+  box-shadow: 0 4px 14px rgba(192, 120, 78, 0.22);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
