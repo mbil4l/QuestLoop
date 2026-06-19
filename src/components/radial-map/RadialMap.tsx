@@ -32,6 +32,22 @@ function describeArc(
   return `M ${start.x} ${start.y} A ${r} ${r} 0 ${large} 0 ${end.x} ${end.y} L ${cx} ${cy} Z`;
 }
 
+// Open arc used as a baseline for curved labels (no center lines, no close).
+// `sweep` follows SVG's flag: 1 = increasing angle (clockwise on screen).
+function describeArcLine(
+  cx: number,
+  cy: number,
+  r: number,
+  startAngle: number,
+  endAngle: number,
+  sweep: 0 | 1
+) {
+  const start = polarToCartesian(cx, cy, r, startAngle);
+  const end = polarToCartesian(cx, cy, r, endAngle);
+  const large = Math.abs(endAngle - startAngle) > 180 ? 1 : 0;
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${large} ${sweep} ${end.x} ${end.y}`;
+}
+
 const SIZE = 520;
 const CENTER = SIZE / 2;
 const OUTER_RADIUS = 220;
@@ -115,11 +131,11 @@ export function RadialMap({
     : null;
 
   return (
-    <div className="relative w-full max-w-[520px] mx-auto aspect-square">
+    <div className="relative w-full max-w-[520px] mx-auto aspect-square pointer-events-none">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${SIZE} ${SIZE}`}
-        className="w-full h-full"
+        className="w-full h-full focus:outline-none pointer-events-none"
         role="img"
         aria-label="World map"
         onKeyDown={handleKeyDown}
@@ -167,7 +183,8 @@ export function RadialMap({
                 stroke={world.color}
                 strokeWidth={isSelected ? 2.5 : 1.5}
                 opacity={isPaused ? 0.55 : 1}
-                className="cursor-pointer"
+                className="cursor-pointer focus:outline-none [outline:none] pointer-events-auto"
+                style={{ outline: "none" }}
                 onClick={() => onSelectWorld(world.id)}
                 onMouseMove={(e) => handleHover(world.id, e)}
                 onMouseLeave={() => setHoveredId(null)}
@@ -206,22 +223,39 @@ export function RadialMap({
                 className="pointer-events-none"
               />
 
+              {/* Curved name — confined to this world's own arc (#9) */}
+              {(() => {
+                const isBottom = midAngle > 90 && midAngle < 270;
+                const labelR = OUTER_RADIUS - 26;
+                const arcLen = ((endAngle - startAngle) * Math.PI) / 180 * labelR;
+                const maxChars = Math.max(3, Math.floor(arcLen / 8.5));
+                const label =
+                  world.name.length > maxChars
+                    ? world.name.slice(0, maxChars - 1) + "…"
+                    : world.name;
+                const pathId = `name-arc-${world.id}`;
+                const d = isBottom
+                  ? describeArcLine(CENTER, CENTER, labelR, endAngle, startAngle, 0)
+                  : describeArcLine(CENTER, CENTER, labelR, startAngle, endAngle, 1);
+                return (
+                  <>
+                    <path id={pathId} d={d} fill="none" stroke="none" />
+                    <text
+                      fill="var(--color-text-primary)"
+                      fontSize="13"
+                      fontWeight="600"
+                      className="pointer-events-none select-none"
+                    >
+                      <textPath href={`#${pathId}`} startOffset="50%" textAnchor="middle">
+                        {label}
+                      </textPath>
+                    </text>
+                  </>
+                );
+              })()}
               <text
                 x={labelPos.x}
-                y={labelPos.y - 4}
-                textAnchor="middle"
-                fill="var(--color-text-primary)"
-                fontSize="13"
-                fontWeight="600"
-                className="pointer-events-none select-none"
-              >
-                {world.name.length > 14
-                  ? world.name.slice(0, 13) + "…"
-                  : world.name}
-              </text>
-              <text
-                x={labelPos.x}
-                y={labelPos.y + 12}
+                y={labelPos.y + 6}
                 textAnchor="middle"
                 fill="var(--color-text-muted)"
                 fontSize="9"
@@ -233,7 +267,7 @@ export function RadialMap({
               {worldsWithNotes?.has(world.id) && (
                 <text
                   x={labelPos.x}
-                  y={labelPos.y + 26}
+                  y={labelPos.y + 20}
                   textAnchor="middle"
                   fontSize="11"
                   className="pointer-events-none select-none"

@@ -58,8 +58,15 @@ export function WorldTooltip({ world, moves, xPercent, yPercent }: WorldTooltipP
                   className="mt-1 w-1.5 h-1.5 rounded-full shrink-0"
                   style={{ backgroundColor: world.color }}
                 />
-                <span className="text-text-secondary leading-snug">
-                  {q.nextMove?.trim() || q.title}
+                <span className="min-w-0">
+                  <span className="block text-text-secondary leading-snug">
+                    {q.title}
+                  </span>
+                  {q.nextMove?.trim() && (
+                    <span className="block text-[10px] text-text-muted leading-tight">
+                      Next: {q.nextMove}
+                    </span>
+                  )}
                 </span>
               </li>
             ))}

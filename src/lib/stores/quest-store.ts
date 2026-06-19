@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type { Quest, Objective, Ritual } from "@/types/domain";
 import { SEED_QUESTS, SEED_OBJECTIVES, SEED_RITUALS } from "@/lib/seed-data";
 
@@ -31,9 +30,7 @@ interface QuestStore {
   updateRitual: (id: string, updates: Partial<Ritual>) => void;
 }
 
-export const useQuestStore = create<QuestStore>()(
-  persist(
-    (set, get) => ({
+export const useQuestStore = create<QuestStore>((set, get) => ({
       quests: [],
       objectives: [],
       rituals: [],
@@ -190,15 +187,4 @@ export const useQuestStore = create<QuestStore>()(
           ),
         }));
       },
-    }),
-    {
-      name: "questloop-quests",
-      skipHydration: true,
-      partialize: (state) => ({
-        quests: state.quests,
-        objectives: state.objectives,
-        rituals: state.rituals,
-      }),
-    }
-  )
-);
+}));

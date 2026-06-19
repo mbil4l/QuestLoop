@@ -7,9 +7,15 @@ import type { WorldStatus } from "@/types/enums";
 import { useQuestStore } from "@/lib/stores/quest-store";
 import { useWorldStore } from "@/lib/stores/world-store";
 import { useNotesStore } from "@/lib/stores/notes-store";
-import { useUIStore, type QuestSortKey } from "@/lib/stores/ui-store";
+import {
+  useUIStore,
+  SORT_LABELS,
+  DEFAULT_SORT,
+  type QuestSortKey,
+} from "@/lib/stores/ui-store";
 import { WORLD_COLORS } from "@/lib/config";
 import { cn } from "@/lib/utils/cn";
+import { EditableText } from "@/components/ui/EditableText";
 
 const STATUSES: WorldStatus[] = [
   "PRIMARY",
@@ -19,75 +25,7 @@ const STATUSES: WorldStatus[] = [
   "COMPLETED",
 ];
 
-const SORT_LABELS: Record<QuestSortKey, string> = {
-  priority: "Priority",
-  due: "Due date",
-  importance: "Importance",
-  alpha: "A → Z",
-  manual: "Manual",
-};
-
 const SWATCHES = Array.from(new Set(Object.values(WORLD_COLORS)));
-
-/* ── Inline editable text ───────────────────────────────────────── */
-function EditableText({
-  value,
-  onCommit,
-  placeholder = "",
-  className,
-  inputClassName,
-}: {
-  value: string;
-  onCommit: (v: string) => void;
-  placeholder?: string;
-  className?: string;
-  inputClassName?: string;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-
-  if (editing) {
-    return (
-      <input
-        autoFocus
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => {
-          setEditing(false);
-          if (draft !== value) onCommit(draft);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-          if (e.key === "Escape") {
-            setDraft(value);
-            setEditing(false);
-          }
-        }}
-        className={cn(
-          "w-full bg-bg-deep border border-border-active rounded px-1.5 py-0.5 text-text-primary focus:outline-none",
-          inputClassName
-        )}
-      />
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        setDraft(value);
-        setEditing(true);
-      }}
-      className={cn(
-        "text-left w-full rounded px-1.5 py-0.5 hover:bg-bg-panel-hover transition-colors",
-        !value && "text-text-muted italic",
-        className
-      )}
-    >
-      {value || placeholder}
-    </button>
-  );
-}
 
 /* ── Importance stars ───────────────────────────────────────────── */
 function Importance({
@@ -305,12 +243,12 @@ export function WorldListPanel({
   const updateWorld = useWorldStore((s) => s.updateWorld);
   const deleteWorld = useWorldStore((s) => s.deleteWorld);
   const prefs = useUIStore((s) => s.listPrefs);
-  const setListPref = useUIStore((s) => s.setListPref);
+  const sortKey = useUIStore((s) => s.worldSort[world.id]) ?? DEFAULT_SORT;
+  const setWorldSort = useUIStore((s) => s.setWorldSort);
   const noteValue = useNotesStore((s) => s.worldNotes[world.id] ?? "");
   const setWorldNotes = useNotesStore((s) => s.setWorldNotes);
 
   const [newTitle, setNewTitle] = useState("");
-  const [showOptions, setShowOptions] = useState(false);
   const [showColors, setShowColors] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const newInputRef = useRef<HTMLInputElement>(null);
@@ -324,7 +262,7 @@ export function WorldListPanel({
     let list = worldQuests;
     if (prefs.hideCompleted) list = list.filter((q) => !q.isCompleted);
     const sorted = [...list];
-    switch (prefs.sortBy) {
+    switch (sortKey) {
       case "priority":
         sorted.sort((a, b) => b.priorityScore - a.priorityScore);
         break;
@@ -344,7 +282,7 @@ export function WorldListPanel({
       // manual → keep store order
     }
     return sorted;
-  }, [worldQuests, prefs.hideCompleted, prefs.sortBy]);
+  }, [worldQuests, prefs.hideCompleted, sortKey]);
 
   const remaining = worldQuests.filter((q) => !q.isCompleted).length;
 
@@ -408,21 +346,33 @@ export function WorldListPanel({
                 style={{ backgroundColor: world.color, boxShadow: `0 0 0 1px ${world.color}` }}
               />
               {showColors && (
-                <div className="absolute z-10 mt-2 p-2 grid grid-cols-6 gap-1.5 cyber-panel-raised">
-                  {SWATCHES.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      aria-label={`Use color ${c}`}
-                      onClick={() => {
-                        updateWorld(world.id, { color: c });
-                        setShowColors(false);
-                      }}
-                      className="w-5 h-5 rounded-full"
-                      style={{ backgroundColor: c }}
-                    />
-                  ))}
-                </div>
+                <>
+                  <button
+                    type="button"
+                    aria-label="Close colors"
+                    onClick={() => setShowColors(false)}
+                    className="fixed inset-0 z-20 cursor-default"
+                  />
+                  <div className="absolute left-0 z-30 mt-2 w-60 p-2.5 grid grid-cols-7 gap-2 rounded-xl bg-bg-panel-raised border border-border-subtle shadow-xl">
+                    {SWATCHES.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        aria-label={`Use color ${c}`}
+                        onClick={() => {
+                          updateWorld(world.id, { color: c });
+                          setShowColors(false);
+                        }}
+                        className="w-6 h-6 rounded-full transition-transform hover:scale-110"
+                        style={{
+                          backgroundColor: c,
+                          outline: c === world.color ? `2px solid ${c}` : "none",
+                          outlineOffset: 2,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 
@@ -512,85 +462,27 @@ export function WorldListPanel({
               />
               <span>min/wk</span>
             </label>
+            <label className="flex items-center gap-1 text-xs text-text-muted">
+              <span>Sort</span>
+              <select
+                value={sortKey}
+                onChange={(e) =>
+                  setWorldSort(world.id, e.target.value as QuestSortKey)
+                }
+                className="bg-bg-deep border border-border-subtle rounded px-1.5 py-1 text-text-secondary focus:outline-none focus:border-border-active"
+              >
+                {(Object.keys(SORT_LABELS) as QuestSortKey[]).map((k) => (
+                  <option key={k} value={k}>
+                    {SORT_LABELS[k]}
+                  </option>
+                ))}
+              </select>
+            </label>
             <span className="ml-auto text-xs text-text-muted">
               {remaining} left
             </span>
           </div>
         </div>
-
-        {/* Toolbar */}
-        <div className="px-4 py-2.5 border-b border-border-subtle flex items-center gap-2 flex-wrap">
-          <label className="flex items-center gap-1 text-xs text-text-muted">
-            <span>Sort</span>
-            <select
-              value={prefs.sortBy}
-              onChange={(e) =>
-                setListPref("sortBy", e.target.value as QuestSortKey)
-              }
-              className="bg-bg-deep border border-border-subtle rounded px-2 py-1 text-text-secondary focus:outline-none focus:border-border-active"
-            >
-              {(Object.keys(SORT_LABELS) as QuestSortKey[]).map((k) => (
-                <option key={k} value={k}>
-                  {SORT_LABELS[k]}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <button
-            type="button"
-            onClick={() => setListPref("hideCompleted", !prefs.hideCompleted)}
-            className={cn(
-              "text-xs px-2 py-1 rounded border transition-colors",
-              prefs.hideCompleted
-                ? "border-border-active text-text-primary bg-bg-panel-hover"
-                : "border-border-subtle text-text-muted"
-            )}
-          >
-            {prefs.hideCompleted ? "Hiding done" : "Showing done"}
-          </button>
-
-          <button
-            type="button"
-            aria-label="Display options"
-            onClick={() => setShowOptions((v) => !v)}
-            className="ml-auto text-xs px-2 py-1 rounded border border-border-subtle text-text-muted hover:text-text-primary"
-          >
-            ⚙ Options
-          </button>
-        </div>
-
-        {showOptions && (
-          <div className="px-4 py-3 border-b border-border-subtle bg-bg-panel-raised grid grid-cols-2 gap-2 text-xs">
-            {(
-              [
-                ["showNextMove", "Next move"],
-                ["showDue", "Due date"],
-                ["showEstimate", "Estimate"],
-                ["showImportance", "Importance"],
-              ] as const
-            ).map(([key, label]) => (
-              <label key={key} className="flex items-center gap-2 text-text-secondary">
-                <input
-                  type="checkbox"
-                  checked={prefs[key]}
-                  onChange={(e) => setListPref(key, e.target.checked)}
-                />
-                {label}
-              </label>
-            ))}
-            <label className="flex items-center gap-2 text-text-secondary col-span-2">
-              <input
-                type="checkbox"
-                checked={prefs.density === "compact"}
-                onChange={(e) =>
-                  setListPref("density", e.target.checked ? "compact" : "comfortable")
-                }
-              />
-              Compact rows
-            </label>
-          </div>
-        )}
 
         {/* Add quest */}
         <div className="px-4 py-3 border-b border-border-subtle">
@@ -632,7 +524,7 @@ export function WorldListPanel({
                   color={world.color}
                   compact={prefs.density === "compact"}
                   prefs={prefs}
-                  canMove={prefs.sortBy === "manual"}
+                  canMove={sortKey === "manual"}
                 />
               ))}
             </ul>
@@ -649,7 +541,7 @@ export function WorldListPanel({
                 onClose();
               }
             }}
-            className="text-xs text-text-muted hover:text-danger-muted transition-colors"
+            className="text-xs text-red-500 hover:text-red-600 transition-colors"
           >
             Delete world
           </button>
