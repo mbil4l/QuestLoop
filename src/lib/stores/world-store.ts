@@ -3,6 +3,7 @@ import type { World } from "@/types/domain";
 import type { WorldStatus } from "@/types/enums";
 import { canTransitionStatus } from "@/domain/models/world";
 import { SEED_WORLDS } from "@/lib/seed-data";
+import { useCircleStore } from "@/lib/stores/circle-store";
 
 interface WorldStore {
   worlds: World[];
@@ -12,7 +13,9 @@ interface WorldStore {
   seedIfEmpty: () => void;
   fetchWorlds: () => void;
   selectWorld: (id: string | null) => void;
-  createWorld: (world: Omit<World, "id" | "createdAt" | "updatedAt">) => string;
+  createWorld: (
+    world: Omit<World, "id" | "circleId" | "createdAt" | "updatedAt">
+  ) => string;
   updateWorld: (id: string, updates: Partial<World>) => void;
   deleteWorld: (id: string) => void;
   updateWorldStatus: (id: string, newStatus: WorldStatus) => boolean;
@@ -40,6 +43,7 @@ export const useWorldStore = create<WorldStore>((set, get) => ({
     const world: World = {
       ...worldData,
       id,
+      circleId: useCircleStore.getState().activeCircleId ?? "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

@@ -18,6 +18,7 @@ import { NotesPanel } from "@/components/notes/NotesPanel";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { ProfilePanel } from "@/components/profile/ProfilePanel";
 import { AuthControl } from "@/components/auth/AuthControl";
+import { CircleSwitcher } from "@/components/circles/CircleSwitcher";
 import type { Quest } from "@/types/domain";
 import { APP_NAME } from "@/lib/config";
 
@@ -52,7 +53,7 @@ export default function Home() {
         useExploreStore.persist.rehydrate(),
       ]);
       const acc = useAuthStore.getState().user?.id ?? "guest";
-      loadAccount(acc);
+      await loadAccount(acc);
       setHydrated(true);
     })();
   }, []);
@@ -146,6 +147,7 @@ export default function Home() {
           >
             + Add World
           </button>
+          <CircleSwitcher />
           <AuthControl />
         </div>
       </header>

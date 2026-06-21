@@ -3,13 +3,92 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useUIStore } from "@/lib/stores/ui-store";
-import { clearAccount } from "@/lib/account";
+import { useWorldStore } from "@/lib/stores/world-store";
+import { useQuestStore } from "@/lib/stores/quest-store";
+import { useNotesStore } from "@/lib/stores/notes-store";
+import { useProfileStore } from "@/lib/stores/profile-store";
+import { useCircleStore } from "@/lib/stores/circle-store";
+import { clearAccount, readCircleData } from "@/lib/account";
+import {
+  buildMarkdown,
+  buildAllCirclesMarkdown,
+  downloadMarkdown,
+  slugify,
+  type CircleExport,
+  type ExportProfile,
+} from "@/lib/export/markdown";
+import type { Quest, Objective, Ritual } from "@/types/domain";
+
+function currentProfile(): ExportProfile {
+  const p = useProfileStore.getState();
+  return {
+    displayName: p.displayName,
+    occupation: p.occupation,
+    emoji: p.emoji,
+    city: p.city,
+    region: p.region,
+    countryCode: p.countryCode,
+  };
+}
+
+function gatherActiveCircle(): CircleExport {
+  const active = useCircleStore.getState().getActiveCircle();
+  const w = useWorldStore.getState();
+  const q = useQuestStore.getState();
+  const n = useNotesStore.getState();
+  return {
+    name: active?.name ?? "My Goals",
+    worlds: w.worlds,
+    quests: q.quests,
+    objectives: q.objectives,
+    rituals: q.rituals,
+    homeNotes: n.homeNotes,
+    worldNotes: n.worldNotes,
+  };
+}
 
 export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const prefs = useUIStore((s) => s.listPrefs);
   const setListPref = useUIStore((s) => s.setListPref);
   const reset = useUIStore((s) => s.resetListPrefs);
+  const circleCount = useCircleStore((s) => s.circles.length);
   const [confirmingClear, setConfirmingClear] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  function exportActive() {
+    const c = gatherActiveCircle();
+    downloadMarkdown(`questloop-${slugify(c.name)}`, buildMarkdown(c, currentProfile()));
+  }
+
+  async function exportAll() {
+    setExporting(true);
+    try {
+      const { circles, activeCircleId } = useCircleStore.getState();
+      const exports: CircleExport[] = [];
+      for (const circle of circles) {
+        if (circle.id === activeCircleId) {
+          exports.push(gatherActiveCircle());
+          continue;
+        }
+        const d = await readCircleData(circle.id);
+        exports.push({
+          name: circle.name,
+          worlds: d.worlds,
+          quests: d.quests as Quest[],
+          objectives: d.objectives as Objective[],
+          rituals: d.rituals as Ritual[],
+          homeNotes: d.homeNotes,
+          worldNotes: d.worldNotes,
+        });
+      }
+      downloadMarkdown(
+        "questloop-all-circles",
+        buildAllCirclesMarkdown(exports, currentProfile())
+      );
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <>
@@ -96,6 +175,36 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
               />
               Compact rows
             </label>
+          </section>
+
+          <section>
+            <h3 className="text-xs uppercase tracking-wider text-text-muted mb-2">
+              Export
+            </h3>
+            <p className="text-xs text-text-muted mb-3">
+              Download a structured Markdown backup of your worlds, quests,
+              objectives, rituals, and notes.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={exportActive}
+                className="h-9 px-4 rounded-lg text-sm font-medium text-white"
+                style={{ backgroundColor: "var(--color-core-blue)" }}
+              >
+                ⬇ This circle (.md)
+              </button>
+              {circleCount > 1 && (
+                <button
+                  type="button"
+                  onClick={exportAll}
+                  disabled={exporting}
+                  className="h-9 px-4 rounded-lg text-sm text-text-secondary border border-border-subtle hover:text-text-primary transition-colors disabled:opacity-50"
+                >
+                  {exporting ? "Exporting…" : "⬇ All circles (.md)"}
+                </button>
+              )}
+            </div>
           </section>
 
           <section>

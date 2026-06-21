@@ -48,9 +48,22 @@ export interface CoreGuideState {
   lastRecommendationAt: string | null;
 }
 
+export interface Circle {
+  id: string;
+  ownerId: string;
+  name: string;
+  /** Free-form label, e.g. "professional", "fun". Optional flavor. */
+  kind: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface World {
   id: string;
   userId: string;
+  /** The radial circle (map) this world belongs to. */
+  circleId: string;
   name: string;
   purpose: string;
   color: string;

@@ -51,7 +51,7 @@ export const SEED_AVATAR: AvatarConfig = {
   unlockedCosmetics: ["cyber-blue", "midnight", "ember"],
 };
 
-export const SEED_WORLDS: World[] = [
+export const SEED_WORLDS: World[] = ([
   {
     id: "world-interview",
     userId,
@@ -152,7 +152,7 @@ export const SEED_WORLDS: World[] = [
     createdAt: daysAgo(30),
     updatedAt: daysAgo(14),
   },
-];
+] as Omit<World, "circleId">[]).map((w) => ({ ...w, circleId: "seed" }));
 
 export const SEED_OBJECTIVES: Objective[] = [
   {

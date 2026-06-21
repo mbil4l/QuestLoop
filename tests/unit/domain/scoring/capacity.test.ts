@@ -10,6 +10,7 @@ import type { World, Quest } from "@/types/domain";
 const makeWorld = (overrides: Partial<World> = {}): World => ({
   id: "w1",
   userId: "u1",
+  circleId: "c1",
   name: "Test",
   purpose: "Test",
   color: "#3B82F6",
